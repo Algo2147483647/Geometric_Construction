@@ -1,18 +1,14 @@
-package math
+package math_lib
 
-// Point 表示三维点
-type Point [3]float64
-
-// Triangle 表示三角形，包含9个浮点数（3个顶点，每个顶点3个坐标）
-type Triangle [9]float64
+import "gonum.org/v1/gonum/mat"
 
 // crossProduct 计算二维叉积
-func crossProduct(a, b, c Point) float64 {
-	return (b[0]-a[0])*(c[1]-b[1]) - (b[1]-a[1])*(c[0]-b[0])
+func crossProduct(a, b, c *mat.VecDense) float64 {
+	return (b.At(0, 0)-a.At(0, 0))*(c.At(1, 0)-b.At(1, 0)) - (b.At(1, 0)-a.At(1, 0))*(c.At(0, 0)-b.At(0, 0))
 }
 
 // isEar 检查三角形是否是"耳朵"
-func isEar(a, b, c Point, polygon []Point) bool {
+func isEar(a, b, c *mat.VecDense, polygon []*mat.VecDense) bool {
 	// 如果不是凸顶点
 	if crossProduct(a, b, c) < 0 {
 		return false
@@ -20,9 +16,9 @@ func isEar(a, b, c Point, polygon []Point) bool {
 
 	// 检查是否有其他顶点在三角形内
 	for _, p := range polygon {
-		if (p[0] == a[0] && p[1] == a[1]) ||
-			(p[0] == b[0] && p[1] == b[1]) ||
-			(p[0] == c[0] && p[1] == c[1]) {
+		if (p.At(0, 0) == a.At(0, 0) && p.At(1, 0) == a.At(1, 0)) ||
+			(p.At(0, 0) == b.At(0, 0) && p.At(1, 0) == b.At(1, 0)) ||
+			(p.At(0, 0) == c.At(0, 0) && p.At(1, 0) == c.At(1, 0)) {
 			continue
 		}
 
@@ -37,9 +33,9 @@ func isEar(a, b, c Point, polygon []Point) bool {
 }
 
 // EarClippingTriangulation 执行耳切法三角剖分
-func EarClippingTriangulation(polygon []Point) []Triangle {
+func EarClippingTriangulation(polygon []*mat.VecDense) []Triangle {
 	triangleSet := make([]Triangle, 0)
-	poly := make([]Point, len(polygon))
+	poly := make([]*mat.VecDense, len(polygon))
 	copy(poly, polygon)
 
 	for len(poly) >= 3 {
@@ -52,9 +48,7 @@ func EarClippingTriangulation(polygon []Point) []Triangle {
 			if len(poly) == 3 || isEar(poly[a], poly[i], poly[c], poly) {
 				// 创建三角形
 				tri := Triangle{
-					poly[a][0], poly[a][1], 0,
-					poly[i][0], poly[i][1], 0,
-					poly[c][0], poly[c][1], 0,
+					[3]*mat.VecDense{poly[a], poly[i], poly[c]},
 				}
 				triangleSet = append(triangleSet, tri)
 

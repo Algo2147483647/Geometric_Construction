@@ -1,32 +1,29 @@
-package math
+package math_lib
+
+import "gonum.org/v1/gonum/mat"
 
 // MarchingCubes 通过函数f计算等值面
-func MarchingCubes(f func(float64, float64, float64) float64, st, ed []float64, N []int) [][]float64 {
-	vertex := [8]int{0, 1, 3, 2, 4, 5, 7, 6}
-	edge := [12][2]int{
-		{0, 1}, {1, 2}, {3, 2}, {0, 3},
-		{4, 5}, {5, 6}, {7, 6}, {4, 7},
-		{0, 4}, {1, 5}, {2, 6}, {3, 7},
-	}
-
-	delta := []float64{
-		(ed[0] - st[0]) / float64(N[0]),
-		(ed[1] - st[1]) / float64(N[1]),
-		(ed[2] - st[2]) / float64(N[2]),
-	}
-
-	triangleSet := make([][]float64, 0)
+func MarchingCubes(f func(*mat.VecDense) float64, st, ed []float64, N []int) []*Triangle {
+	var (
+		res    = make([]*Triangle, 0)
+		vertex = [8]int{0, 1, 3, 2, 4, 5, 7, 6}
+		edge   = [12][2]int{
+			{0, 1}, {1, 2}, {3, 2}, {0, 3},
+			{4, 5}, {5, 6}, {7, 6}, {4, 7},
+			{0, 4}, {1, 5}, {2, 6}, {3, 7},
+		}
+		delta = []float64{
+			(ed[0] - st[0]) / float64(N[0]),
+			(ed[1] - st[1]) / float64(N[1]),
+			(ed[2] - st[2]) / float64(N[2]),
+		}
+	)
 
 	for i := 0; i < N[0]*N[1]*N[2]; i++ {
-		// 计算当前体素的位置
-		xIdx := i % N[0]
-		yIdx := (i / N[0]) % N[1]
-		zIdx := i / (N[0] * N[1])
-
 		vec := []float64{
-			st[0] + float64(xIdx)*delta[0],
-			st[1] + float64(yIdx)*delta[1],
-			st[2] + float64(zIdx)*delta[2],
+			st[0] + float64(i%N[0])*delta[0],
+			st[1] + float64((i/N[0])%N[1])*delta[1],
+			st[2] + float64(i/(N[0]*N[1]))*delta[2],
 		}
 
 		var val [8]float64
@@ -34,16 +31,20 @@ func MarchingCubes(f func(float64, float64, float64) float64, st, ed []float64, 
 
 		// 计算8个顶点的值
 		for j := 0; j < 8; j++ {
-			x := vec[0] + delta[0]*float64(vertex[j]&1)
-			y := vec[1] + delta[1]*float64((vertex[j]&2)>>1)
-			z := vec[2] + delta[2]*float64((vertex[j]&4)>>2)
+			t := mat.NewVecDense(3, []float64{
+				vec[0] + delta[0]*float64(vertex[j]&1),
+				vec[1] + delta[1]*float64((vertex[j]&2)>>1),
+				vec[2] + delta[2]*float64((vertex[j]&4)>>2),
+			})
 
 			// 检查是否在范围内
-			if x < st[0] || x > ed[0] || y < st[1] || y > ed[1] || z < st[2] || z > ed[2] {
+			if t.AtVec(0) < st[0] || t.AtVec(0) > ed[0] ||
+				t.AtVec(1) < st[1] || t.AtVec(1) > ed[1] ||
+				t.AtVec(2) < st[2] || t.AtVec(2) > ed[2] {
 				continue
 			}
 
-			val[j] = f(x, y, z)
+			val[j] = f(t)
 			if val[j] < 0 {
 				cubeindex |= (1 << j)
 			}
@@ -55,7 +56,7 @@ func MarchingCubes(f func(float64, float64, float64) float64, st, ed []float64, 
 				break
 			}
 
-			tri := make([]float64, 9)
+			tri := Triangle{}
 			for k := 0; k < 3; k++ {
 				e := TriTable[cubeindex][j+k]
 				a := (0.0 - val[edge[e][0]]) / (val[edge[e][1]] - val[edge[e][0]])
@@ -63,15 +64,17 @@ func MarchingCubes(f func(float64, float64, float64) float64, st, ed []float64, 
 				dy := float64((edge[e][0]&2)>>1)*(1-a) + float64((edge[e][1]&2)>>1)*a
 				dz := float64((edge[e][0]&4)>>2)*(1-a) + float64((edge[e][1]&4)>>2)*a
 
-				tri[k*3+0] = vec[0] + delta[0]*dx
-				tri[k*3+1] = vec[1] + delta[1]*dy
-				tri[k*3+2] = vec[2] + delta[2]*dz
+				tri.P[k] = mat.NewVecDense(3, []float64{
+					vec[0] + delta[0]*dx,
+					vec[1] + delta[1]*dy,
+					vec[2] + delta[2]*dz,
+				})
 			}
-			triangleSet = append(triangleSet, tri)
+			res = append(res, &tri)
 		}
 	}
 
-	return triangleSet
+	return res
 }
 
 // MarchingCubesFromGrid 从三维网格数据计算等值面
