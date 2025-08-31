@@ -4,7 +4,10 @@
 
 ## Introduction
 
-***Implicit Equation | Camellia***: $f: (r, \theta) \to \mathbb R^3$
+***Implicit Equation | Camellia***: 
+
+$$f: (r, \theta) \to \mathbb R^3$$
+
 $$
 \begin{align*}
 (r, \theta) &\in ([0, 1], [4\pi, 24 \pi])  \tag{参数空间}\\
