@@ -1,6 +1,8 @@
 package math_lib
 
-import "gonum.org/v1/gonum/mat"
+import (
+	"gonum.org/v1/gonum/mat"
+)
 
 // MarchingCubes 通过函数f计算等值面
 func MarchingCubes(f func(*mat.VecDense) float64, st, ed []float64, N []int) []*Triangle {

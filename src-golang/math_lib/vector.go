@@ -78,6 +78,11 @@ func Cross(res, u, v *mat.VecDense) *mat.VecDense {
 	return res
 }
 
+func Cross2D(a, b, c *mat.VecDense) float64 {
+	return (b.At(0, 0)-a.At(0, 0))*(c.At(1, 0)-b.At(1, 0)) -
+		(b.At(1, 0)-a.At(1, 0))*(c.At(0, 0)-b.At(0, 0))
+}
+
 func Cross2(u, v *mat.VecDense) *mat.VecDense {
 	return Cross(mat.NewVecDense(u.Len(), nil), u, v)
 }

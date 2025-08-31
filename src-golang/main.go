@@ -1,8 +1,8 @@
 package main
 
 import (
-	"Geometric_Construction/controller"
-	"fmt"
+	"Geometric_Construction/application"
+	"math"
 )
 
 func main() {
@@ -32,29 +32,40 @@ func main() {
 	//	fmt.Printf("生成环面STL文件时出错: %v\n", err)
 	//}
 
-	// 创建参数方程控制器
-	parametricCtrl := controller.NewParametricController()
+	h := application.NewHandler()
 	a := 2.0
-	b := 100
-
-	// 示例：生成球面的参数方程
+	var err error
 	Func := func(u, v float64) (x, y, z float64) {
-		x = u - u*u*u/3 + u*v*v
-		y = v - v*v*v/3 + v*u*u
-		z = u*u - v*v
+		theta := 4*math.Pi + u*20*math.Pi
+		r := v
+		modVal := math.Mod(3.6*theta, 2*math.Pi)
+		disturb := math.Sin(15*theta) / 150
+		edge := 1 - 0.5*math.Pow(1-modVal/math.Pi, 4) + disturb
+		f2 := 2 * math.Pow(r*r-r, 2)
+		alpha := (math.Pi / 2) * math.Exp(-theta/(8*math.Pi))
+		h := f2 * math.Sin(alpha)
+		sinAlpha := math.Sin(alpha)
+		cosAlpha := math.Cos(alpha)
+		R := sinAlpha*r + cosAlpha*h
+		H := cosAlpha*r - sinAlpha*h
+		x = edge * R * math.Cos(theta)
+		y = edge * R * math.Sin(theta)
+		z = edge * H
 		return
 	}
 
-	fmt.Println("生成球面STL文件...")
-	err := parametricCtrl.ProcessParametricFunction(
+	h.TriangulateParametricEquation(
 		Func,             // 球面参数方程
-		[]float64{-a, a}, // u参数范围 [0, 2π]
-		[]float64{-a, a}, // v参数范围 [0, π]
-		[]int{b, b},      // u和v方向的分割数
-		"sphere.stl")     // 输出文件名
+		[]float64{0, a},  // u参数范围 [0, 2π]
+		[]float64{0, 1},  // v参数范围 [0, π]
+		[]int{2000, 100}, // u和v方向的分割数
+	)
 	if err != nil {
-		fmt.Printf("生成球面STL文件时出错: %v\n", err)
+		panic(err)
 	}
 
-	fmt.Println("所有STL文件生成完成!")
+	err = application.SaveBinarySTL(h.Triangles, "sphere.stl")
+	if err != nil {
+		panic(err)
+	}
 }
