@@ -6,13 +6,13 @@ import "gonum.org/v1/gonum/mat"
 func MarchingCubes(f func(*mat.VecDense) float64, st, ed []float64, N []int) []*Triangle {
 	var (
 		res    = make([]*Triangle, 0)
-		vertex = [8]int{0, 1, 3, 2, 4, 5, 7, 6}
-		edge   = [12][2]int{
+		vertex = [8]int{0b000, 0b001, 0b011, 0b010, 0b100, 0b101, 0b111, 0b110} // 定义立方体8个顶点的顺序及对应二进制坐标
+		edge   = [12][2]int{                                                    // 定义立方体12条边，每条边由两个顶点索引表示
 			{0, 1}, {1, 2}, {3, 2}, {0, 3},
 			{4, 5}, {5, 6}, {7, 6}, {4, 7},
 			{0, 4}, {1, 5}, {2, 6}, {3, 7},
 		}
-		delta = []float64{
+		delta = []float64{ // 每个维度上相邻网格点之间的距离
 			(ed[0] - st[0]) / float64(N[0]),
 			(ed[1] - st[1]) / float64(N[1]),
 			(ed[2] - st[2]) / float64(N[2]),
@@ -20,49 +20,52 @@ func MarchingCubes(f func(*mat.VecDense) float64, st, ed []float64, N []int) []*
 	)
 
 	for i := 0; i < N[0]*N[1]*N[2]; i++ {
-		vec := []float64{
+		vec := []float64{ // 当前体素的起始坐标
 			st[0] + float64(i%N[0])*delta[0],
 			st[1] + float64((i/N[0])%N[1])*delta[1],
 			st[2] + float64(i/(N[0]*N[1]))*delta[2],
 		}
 
-		var val [8]float64
-		cubeindex := 0
+		var (
+			valueForVertexs [8]float64
+			cubeIndex       = 0
+		)
 
-		// 计算8个顶点的值
-		for j := 0; j < 8; j++ {
+		for j := 0; j < 8; j++ { // 计算8个顶点的值
 			t := mat.NewVecDense(3, []float64{
 				vec[0] + delta[0]*float64(vertex[j]&1),
 				vec[1] + delta[1]*float64((vertex[j]&2)>>1),
 				vec[2] + delta[2]*float64((vertex[j]&4)>>2),
 			})
-
-			// 检查是否在范围内
-			if t.AtVec(0) < st[0] || t.AtVec(0) > ed[0] ||
+			if t.AtVec(0) < st[0] || t.AtVec(0) > ed[0] || // 检查是否在范围内
 				t.AtVec(1) < st[1] || t.AtVec(1) > ed[1] ||
 				t.AtVec(2) < st[2] || t.AtVec(2) > ed[2] {
 				continue
 			}
 
-			val[j] = f(t)
-			if val[j] < 0 {
-				cubeindex |= (1 << j)
+			valueForVertexs[j] = f(t)
+			if valueForVertexs[j] < 0 {
+				cubeIndex |= (1 << j)
 			}
 		}
 
 		// 根据查找表生成三角形
-		for j := 0; j < 16; j += 3 {
-			if TriTable[cubeindex][j] == -1 {
+		for j := 0; j < 15; j += 3 {
+			if TriTable[cubeIndex][j] == -1 {
 				break
 			}
 
 			tri := Triangle{}
 			for k := 0; k < 3; k++ {
-				e := TriTable[cubeindex][j+k]
-				a := (0.0 - val[edge[e][0]]) / (val[edge[e][1]] - val[edge[e][0]])
-				dx := float64(edge[e][0]&1)*(1-a) + float64(edge[e][1]&1)*a
-				dy := float64((edge[e][0]&2)>>1)*(1-a) + float64((edge[e][1]&2)>>1)*a
-				dz := float64((edge[e][0]&4)>>2)*(1-a) + float64((edge[e][1]&4)>>2)*a
+				var (
+					e  = TriTable[cubeIndex][j+k]
+					a  = (0.0 - valueForVertexs[edge[e][0]]) / (valueForVertexs[edge[e][1]] - valueForVertexs[edge[e][0]])
+					v1 = vertex[edge[e][0]]
+					v2 = vertex[edge[e][1]]
+					dx = float64(v1&1)*(1-a) + float64(v2&1)*a
+					dy = float64((v1&2)>>1)*(1-a) + float64((v2&2)>>1)*a
+					dz = float64((v1&4)>>2)*(1-a) + float64((v2&4)>>2)*a
+				)
 
 				tri.P[k] = mat.NewVecDense(3, []float64{
 					vec[0] + delta[0]*dx,
@@ -115,7 +118,7 @@ func MarchingCubesFromGrid(X [][][]float64, zero, delta []float64) [][]float64 {
 		}
 
 		// 根据查找表生成三角形
-		for j := 0; j < 16; j += 3 {
+		for j := 0; j < 15; j += 3 {
 			if TriTable[cubeindex][j] == -1 {
 				break
 			}
@@ -139,7 +142,7 @@ func MarchingCubesFromGrid(X [][][]float64, zero, delta []float64) [][]float64 {
 	return triangleSet
 }
 
-// TriTable 是Marching Cubes算法中的三角形查找表
+// TriTable 是Marching Cubes算法中的三角形查找表, 256 对应于 8 个顶点的所有可能状态组合, 每个元素表示对应状态的三角形边索引, 表示在最坏情况下，一个立方体单元可以被剖分为 5 个三角形（5*3=15 个顶点索引）
 var TriTable = [256][16]int{
 	{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
 	{0, 8, 3, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
