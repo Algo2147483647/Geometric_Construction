@@ -15,7 +15,7 @@ func main() {
 	// 示例1: 生成球体STL文件
 	fmt.Println("生成球体STL文件...")
 	err := ctrl.ProcessImplicitFunction(
-		ctrl.SphereFunction(1.0),    // 半径为1的球体
+		SphereFunction(1.0),         // 半径为1的球体
 		[]float64{-1.5, -1.5, -1.5}, // 起始坐标
 		[]float64{1.5, 1.5, 1.5},    // 结束坐标
 		[]int{50, 50, 50},           // 网格划分
@@ -27,11 +27,11 @@ func main() {
 	// 示例2: 生成环面STL文件
 	fmt.Println("生成环面STL文件...")
 	err = ctrl.ProcessImplicitFunction(
-		ctrl.TorusFunction(1.0, 0.3), // 大半径1.0，小半径0.3的环面
-		[]float64{-1.5, -1.5, -1.5},  // 起始坐标
-		[]float64{1.5, 1.5, 1.5},     // 结束坐标
-		[]int{50, 50, 50},            // 网格划分
-		"torus.stl")                  // 输出文件名
+		TorusFunction(1.0, 0.3),     // 大半径1.0，小半径0.3的环面
+		[]float64{-1.5, -1.5, -1.5}, // 起始坐标
+		[]float64{1.5, 1.5, 1.5},    // 结束坐标
+		[]int{50, 50, 50},           // 网格划分
+		"torus.stl")                 // 输出文件名
 	if err != nil {
 		fmt.Printf("生成环面STL文件时出错: %v\n", err)
 	}
@@ -57,4 +57,20 @@ func main() {
 	}
 
 	fmt.Println("所有STL文件生成完成!")
+}
+
+// SphereFunction 球体隐函数示例: x² + y² + z² - r² = 0
+func SphereFunction(radius float64) func(*mat.VecDense) float64 {
+	return func(point *mat.VecDense) float64 {
+		x, y, z := point.AtVec(0), point.AtVec(1), point.AtVec(2)
+		return x*x + y*y + z*z - radius*radius
+	}
+}
+
+// TorusFunction 环面隐函数示例
+func TorusFunction(R, r float64) func(*mat.VecDense) float64 {
+	return func(point *mat.VecDense) float64 {
+		x, y, z := point.AtVec(0), point.AtVec(1), point.AtVec(2)
+		return math.Pow(R-math.Sqrt(x*x+y*y), 2) + z*z - r*r
+	}
 }
