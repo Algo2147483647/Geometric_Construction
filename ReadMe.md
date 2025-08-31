@@ -20,6 +20,8 @@ h(r,\theta)&=f_2(r) \sin(\alpha(\theta))  \tag{弧面衰减}\\
 \left(\begin{matrix}X\\ Y\\ Z\end{matrix}\right) &= \left(\begin{matrix}edge(\theta) \cdot R \cos\theta\\ edge(\theta) \cdot R \sin\theta\\  edge(\theta) \cdot H\end{matrix}\right)  \tag{3D欧式空间映射}
 \end{align*}
 $$
+
+
 <img src="./docs/assets/db54bafc40ecf0743799a487eb9f812.jpg" alt="db54bafc40ecf0743799a487eb9f812" style="zoom:50%;" />
 
 ### System Overview
