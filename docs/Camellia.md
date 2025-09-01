@@ -28,7 +28,7 @@ $$
 
 - $\text{disturb}(\theta)$ 引入高频（周期$2\pi/15 \approx 0.42$）、低幅（$\pm 1/150$）扰动。
 
-![image-20250330012446644](C:\Users\29753\AppData\Roaming\Typora\typora-user-images\image-20250330012446644.png)
+![image-20250330012446644](./assets/image-20250330012446644.png)
 
 ## 花瓣弧面
 
